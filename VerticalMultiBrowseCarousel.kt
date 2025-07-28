@@ -8,11 +8,25 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.semantics.ScrollAxisRange
+import androidx.compose.ui.semantics.scrollable
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.hereliesaz.verticalcarousel.internal.KeylineState
 import com.hereliesaz.verticalcarousel.internal.place
+import kotlinx.coroutines.runBlocking
 
+/**
+ * A vertically scrolling carousel that shows multiple items at once, with a larger,
+ * focused item in the center.
+ *
+ * @param state The state object to be used to control the carousel.
+ * @param modifier The modifier to be applied to this layout.
+ * @param preferredItemHeight The preferred height of the focused item.
+ * @param itemSpacing The spacing between items.
+ * @param content The composable content for each item in the carousel.
+ */
 @Composable
 fun VerticalMultiBrowseCarousel(
     state: CarouselState,
@@ -37,7 +51,15 @@ fun VerticalMultiBrowseCarousel(
                 orientation = Vertical,
                 state = state.scrollableState,
                 flingBehavior = flingBehavior
-            ),
+            )
+            .semantics {
+                scrollable(
+                    state = state.scrollableState,
+                    orientation = Vertical,
+                    reverseScrolling = true,
+                    flingBehavior = flingBehavior
+                )
+            },
         content = {
             for (i in 0 until state.itemCount()) {
                 Box {
