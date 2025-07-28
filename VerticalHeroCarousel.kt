@@ -1,43 +1,60 @@
 package com.hereliesaz.verticalcarousel
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.pager.PagerState
-import androidx.compose.foundation.pager.VerticalPager
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.orientation.Vertical
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.util.lerp
-import kotlin.math.absoluteValue
+import androidx.compose.ui.layout.Layout
+import com.hereliesaz.verticalcarousel.internal.KeylineState
+import com.hereliesaz.verticalcarousel.internal.place
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun VerticalHeroCarousel(
-    state: PagerState,
+    state: CarouselState,
     modifier: Modifier = Modifier,
-    content: @Composable (page: Int) -> Unit,
+    content: @Composable CarouselItemScope.(itemIndex: Int) -> Unit
 ) {
-    VerticalPager(
-        state = state,
-        modifier = modifier,
-        pageSize = androidx.compose.foundation.pager.PageSize.Fill,
-    ) { page ->
-        val pageOffset = (state.currentPage - page) + state.currentPageOffsetFraction
-
-        val alpha = lerp(
-            start = 0f,
-            stop = 1f,
-            fraction = 1f - pageOffset.absoluteValue.coerceIn(0f, 1f)
+    val flingBehavior = state.fling(0f, spring())
+    state.keylineState = remember(state.itemCount()) {
+        KeylineState(
+            itemHeight = 0.dp, // Item height is determined by container
+            itemSpacing = 0.dp,
+            itemCount = state.itemCount(),
+            strategy = KeylineState.Strategy.Hero
         )
-        val translationY = pageOffset * (500f) // Parallax effect
+    }
 
-        Box(
-            modifier = Modifier
-                .graphicsLayer {
-                    this.alpha = alpha
-                    this.translationY = translationY
+    Layout(
+        modifier = modifier
+            .scrollable(
+                orientation = Vertical,
+                state = state.scrollableState,
+                flingBehavior = flingBehavior
+            ),
+        content = {
+            for (i in 0 until state.itemCount()) {
+                Box {
+                    val scope = CarouselItemScopeImpl(
+                        carouselItemInfo = state.keylineState.getItemInfo(i)
+                    )
+                    scope.content(i)
                 }
-        ) {
-            content(page)
+            }
+        }
+    ) { measurables, constraints ->
+        state.keylineState.itemHeight = constraints.maxHeight.toDp()
+        layout(constraints.maxWidth, constraints.maxHeight) {
+            measurables.forEachIndexed { index, measurable ->
+                place(
+                    index = index,
+                    measurable = measurable,
+                    constraints = constraints,
+                    keylineState = state.keylineState
+                )
+            }
         }
     }
 }
