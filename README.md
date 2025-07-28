@@ -1,6 +1,7 @@
 # VerticalCarousel for Jetpack Compose
+[![](https://jitpack.io/v/HereLiesAz/VerticalCarousel.svg)](https://jitpack.io/#HereLiesAz/VerticalCarousel)
 
-A library providing the vertical Material 3 carousels that Google hasn't... yet. This provides a suite of vertical carousel components that mirror the API and behavior of the official horizontal M3 carousels, built around a spec-compliant Keyline-based engine.
+A library providing the vertical Material 3 carousels that Google hasn't yet. This provides a suite of vertical carousel components that mirror the API and behavior of the official horizontal M3 carousels, built around a spec-compliant Keyline-based engine.
 
 ## Installation
 
@@ -82,7 +83,7 @@ VerticalUncontainedCarousel(
 }
 ```
 
-<<<<<<< HEAD
+
 ### VerticalCenteredCarousel
 
 A carousel that keeps the current item centered in the viewport, allowing portions of the previous and next items to be visible.
@@ -99,7 +100,7 @@ VerticalCenteredCarousel(
     // Your item content
 }
 ```
-=======
+
 ### VerticalHeroCarousel
 
 A simple, full-height carousel for displaying one large item at a time.
@@ -130,4 +131,4 @@ VerticalMultiBrowseCenteredCarousel(
     // Your item content
 }
 ```
->>>>>>> origin/main
+
