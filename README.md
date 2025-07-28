@@ -1,4 +1,5 @@
 # VerticalCarousel for Jetpack Compose
+[![](https://jitpack.io/v/HereLiesAz/VerticalCarousel.svg)](https://jitpack.io/#HereLiesAz/VerticalCarousel)
 
 A library providing the vertical Material 3 carousels that Google hasn't yet. This provides a suite of vertical carousel components that mirror the API and behavior of the official horizontal M3 carousels, built around a spec-compliant Keyline-based engine.
 
