@@ -20,7 +20,7 @@ Then, add the dependency to your app's `build.gradle.kts` file:
 
 ```kotlin
 dependencies {
-    implementation('com.github.hereliesaz.VerticalCarousel:verticalcarousel:0.5.0')
+    implementation('com.github.hereliesaz.VerticalCarousel:verticalcarousel:master-SNAPSHOT')
 }
 ```
 
