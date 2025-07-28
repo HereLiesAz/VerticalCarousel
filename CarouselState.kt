@@ -10,6 +10,12 @@ import com.hereliesaz.verticalcarousel.internal.CarouselFlingBehavior
 import com.hereliesaz.verticalcarousel.internal.CarouselScrollableState
 import com.hereliesaz.verticalcarousel.internal.KeylineState
 
+/**
+ * Creates and remembers a [CarouselState] for a carousel.
+ *
+ * @param initialItem The initial item index to be focused.
+ * @param itemCount A lambda that returns the total number of items in the carousel.
+ */
 @Composable
 fun rememberCarouselState(
     initialItem: Int = 0,
@@ -23,6 +29,12 @@ fun rememberCarouselState(
     }
 }
 
+/**
+ * A state object that can be hoisted to control and observe carousel interactions.
+ *
+ * @param initialItem The initial item index to be focused.
+ * @param itemCount A lambda that returns the total number of items in the carousel.
+ */
 class CarouselState(
     val initialItem: Int,
     val itemCount: () -> Int,
