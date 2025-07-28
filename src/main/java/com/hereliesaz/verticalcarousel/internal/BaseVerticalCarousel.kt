@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.Layout
 import com.hereliesaz.verticalcarousel.state.CarouselItemScope
 import com.hereliesaz.verticalcarousel.state.CarouselItemScopeImpl
@@ -24,53 +25,45 @@ internal fun BaseVerticalCarousel(
 ) {
     state.keylineState = keylineState
     val coroutineScope = rememberCoroutineScope()
-    // The fling behavior needs to be created to be used after a drag ends.
-    // We can't use the FlingBehavior directly in the pointerInput, but we can replicate its logic.
     val flingSpec: AnimationSpec<Float> = spring()
 
     Layout(
-        // Replace the .scrollable modifier with a more cooperative pointerInput.
         modifier = modifier
             .pointerInput(state) {
+                // VelocityTracker is needed to calculate the fling velocity when the drag ends.
+                val velocityTracker = VelocityTracker()
                 detectDragGestures(
+                    onDragStart = { velocityTracker.resetTracking() },
                     onDragEnd = {
-                        // After the drag gesture ends, launch a coroutine to handle the fling (snap).
                         coroutineScope.launch {
                             val flingBehavior = CarouselFlingBehavior(
                                 scrollableState = state.scrollableState,
                                 keylineState = keylineState,
                                 snapAnimationSpec = flingSpec
                             )
-                            // We need a ScrollScope to call performFling, but we can't get one here.
-                            // So, we will manually trigger the snapping logic.
-                            // This logic is a simplified version of what performFling does.
-                            val snapStep = keylineState.getSnapStep()
-                            if (snapStep > 0) {
-                                val targetIndex = (abs(keylineState.scrollOffset.value) / snapStep).roundToInt()
-                                val targetValue = targetIndex * snapStep * -1
-                                state.scrollableState.scroll(androidx.compose.foundation.MutatePriority.Default) {
-                                    androidx.compose.animation.core.animate(
-                                        initialValue = keylineState.scrollOffset.value,
-                                        targetValue = targetValue,
-                                        animationSpec = flingSpec
-                                    ) { value, _ ->
-                                        scrollBy(value - keylineState.scrollOffset.value)
-                                    }
+                            // Use the velocityTracker to get the final velocity of the gesture.
+                            val velocity = velocityTracker.calculateVelocity()
+
+                            // performFling requires a ScrollScope, which we create an instance of.
+                            val scrollScope = object : androidx.compose.foundation.gestures.ScrollScope {
+                                override fun scrollBy(pixels: Float): Float {
+                                    return state.scrollableState.dispatchRawDelta(pixels)
                                 }
                             }
+                            // Call the original fling behavior with the correct scope and velocity.
+                            scrollScope.performFling(velocity.y)
                         }
                     }
                 ) { change, dragAmount ->
-                    // This is the core logic.
-                    // Check if the drag is more vertical than horizontal.
                     if (abs(dragAmount.y) > abs(dragAmount.x)) {
-                        // If it's a vertical drag, consume the event to prevent children from seeing it.
+                        // It's a vertical drag, handle it.
                         change.consume()
-                        // And manually scroll the carousel state.
+                        // Add the pointer event to the velocity tracker to track fling speed.
+                        velocityTracker.addPosition(change.uptimeMillis, change.position)
+                        // Manually scroll the carousel state.
                         state.scrollableState.dispatchRawDelta(dragAmount.y)
                     }
-                    // If the drag is more horizontal, we DO NOT consume it. This allows the gesture
-                    // to propagate down to the child HorizontalMultiBrowseCarousel.
+                    // If horizontal, do nothing and let the event propagate.
                 }
             },
         content = {
