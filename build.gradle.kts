@@ -36,6 +36,20 @@ android {
     }
 }
 
+publishing {
+    publications {
+        create<MavenPublication>("release") {
+            groupId = "com.github.hereliesaz"
+            artifactId = "VerticalCarousel"
+            version = "0.5.5" // Use a new version
+
+            afterEvaluate {
+                from(components["release"])
+            }
+        }
+    }
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(platform(libs.compose.bom))
