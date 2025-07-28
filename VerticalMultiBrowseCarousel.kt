@@ -1,53 +1,45 @@
 package com.hereliesaz.verticalcarousel
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.pager.PageSize
-import androidx.compose.foundation.pager.PagerState
-import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.lerp
-import kotlin.math.absoluteValue
+import com.hereliesaz.verticalcarousel.internal.KeylineState
+import com.hereliesaz.verticalcarousel.internal.place
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun VerticalMultiBrowseCarousel(
-    state: PagerState,
+    state: CarouselState,
     modifier: Modifier = Modifier,
     preferredItemHeight: Dp,
     itemSpacing: Dp = 0.dp,
-    contentPadding: PaddingValues = PaddingValues(0.dp),
-    content: @Composable (page: Int) -> Unit,
+    content: @Composable CarouselItemScope.(itemIndex: Int) -> Unit
 ) {
-    VerticalPager(
-        state = state,
-        modifier = modifier.fillMaxSize(),
-        pageSize = PageSize.Fixed(preferredItemHeight),
-        contentPadding = contentPadding,
-        pageSpacing = itemSpacing
-    ) { page ->
-        val pageOffset = (
-            (state.currentPage - page) + state.currentPageOffsetFraction
-            ).absoluteValue
+    state.keylineState = KeylineState(
+        itemHeight = preferredItemHeight,
+        itemSpacing = itemSpacing,
+        itemCount = state.itemCount()
+    )
 
-        val scale = lerp(1f, 0.8f, pageOffset)
-        val alpha = lerp(1f, 0.3f, pageOffset)
-
-        Box(
-            modifier = Modifier
-                .graphicsLayer {
-                    scaleX = scale
-                    scaleY = scale
-                    this.alpha = alpha
-                }
-        ) {
-            content(page)
+    Layout(
+        modifier = modifier,
+        content = {
+            for (i in 0 until state.itemCount()) {
+                val scope = CarouselItemScopeImpl(CarouselItemInfo(preferredItemHeight, 0f))
+                scope.content(i)
+            }
+        }
+    ) { measurables, constraints ->
+        layout(constraints.maxWidth, constraints.maxHeight) {
+            measurables.forEachIndexed { index, measurable ->
+                place(
+                    index = index,
+                    measurable = measurable,
+                    constraints = constraints,
+                    keylineState = state.keylineState
+                )
+            }
         }
     }
 }
