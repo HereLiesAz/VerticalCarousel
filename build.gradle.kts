@@ -4,7 +4,8 @@ plugins {
     alias(libs.plugins.org.jetbrains.kotlin.android)
     alias(libs.plugins.composeCompiler)
 }
-
+group = "com.github.HereLiesAz"
+version = "0.5.1" 
 android {
     namespace = "com.hereliesaz.verticalcarousel"
     compileSdk = 36
