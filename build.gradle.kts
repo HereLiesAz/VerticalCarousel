@@ -51,7 +51,7 @@ publishing {
         create<MavenPublication>("release") {
             groupId = "com.github.hereliesaz"
             artifactId = "VerticalCarousel"
-            version = "0.6.7"
+            version = "0.7.6"
 
             afterEvaluate {
                 from(components["release"])
