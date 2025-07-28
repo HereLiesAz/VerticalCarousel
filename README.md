@@ -1,6 +1,6 @@
 # VerticalCarousel for Jetpack Compose
 
-A library providing the vertical Material 3 carousels that Google hasn't yet. This provides a suite of vertical carousel components that mirror the API and behavior of the official horizontal M3 carousels.
+A library providing the vertical Material 3 carousels that Google hasn't... yet. This provides a suite of vertical carousel components that mirror the API and behavior of the official horizontal M3 carousels, built around a spec-compliant Keyline-based engine.
 
 ## Installation
 
@@ -9,7 +9,7 @@ To add this library to your project, add the following to your root `settings.gr
 ```kotlin
 dependencyResolutionManagement {
     repositories {
-        ...
+        // ...
         maven { url 'https://jitpack.io' }
     }
 }
@@ -25,86 +25,76 @@ dependencies {
 
 ## Usage
 
-Each carousel is a composable that takes a `PagerState` and content.
+Each carousel is a composable that takes a `CarouselState` and a content lambda that provides a `CarouselItemScope`.
+
+### rememberCarouselState
+
+All carousels require a `CarouselState`.
+
+```kotlin
+import com.hereliesaz.verticalcarousel.state.rememberCarouselState
+
+val state = rememberCarouselState(itemCount = { /* ... */ })
+```
 
 ### VerticalMultiBrowseCarousel
 
 A carousel that shows smaller, de-emphasized items above and below the main, focused item.
 
 ```kotlin
-import com.hereliesaz.verticalcarousel.VerticalMultiBrowseCarousel
+import com.hereliesaz.verticalcarousel.component.VerticalMultiBrowseCarousel
 
-val pagerState = rememberPagerState { pageCount }
 VerticalMultiBrowseCarousel(
-    state = pagerState,
-    preferredItemHeight = 450.dp,
-    contentPadding = PaddingValues(vertical = 120.dp),
-    itemSpacing = 16.dp
-) { page ->
+    state = state,
+    preferredItemHeight = 250.dp,
+    itemSpacing = 8.dp
+) { itemIndex ->
+    // Your item content, using carouselItemInfo from the scope
+    // ex: Modifier.maskClip(MaterialTheme.shapes.extraLarge)
+}
+```
+
+### VerticalHeroCarousel
+
+A simple, full-height carousel for displaying one large item at a time. Ideal for hero images or full-screen content.
+
+```kotlin
+import com.hereliesaz.verticalcarousel.component.VerticalHeroCarousel
+
+VerticalHeroCarousel(state = state) { itemIndex ->
     // Your item content
 }
 ```
 
 ### VerticalUncontainedCarousel
 
-A carousel with fixed-size items that are not masked by the container.
+A carousel with fixed-size items that are not masked by the container and scroll freely.
 
 ```kotlin
-import com.hereliesaz.verticalcarousel.VerticalUncontainedCarousel
+import com.hereliesaz.verticalcarousel.component.VerticalUncontainedCarousel
 
-val pagerState = rememberPagerState { pageCount }
 VerticalUncontainedCarousel(
-    state = pagerState,
+    state = state,
     itemHeight = 200.dp,
     itemSpacing = 8.dp
-) { page ->
+) { itemIndex ->
     // Your item content
 }
 ```
 
-### VerticalFadingCarousel
+### VerticalCenteredCarousel
 
-A carousel that applies a fading gradient to the top and bottom edges.
-
-```kotlin
-import com.hereliesaz.verticalcarousel.VerticalFadingCarousel
-
-val pagerState = rememberPagerState { pageCount }
-VerticalFadingCarousel(
-    state = pagerState,
-    itemHeight = 300.dp
-) { page ->
-    // Your item content
-}
-```
-
-### VerticalHeroCarousel
-
-A simple, full-height carousel for displaying one large item at a time.
+A carousel that keeps the current item centered in the viewport, allowing portions of the previous and next items to be visible.
 
 ```kotlin
-import com.hereliesaz.verticalcarousel.VerticalHeroCarousel
+import com.hereliesaz.verticalcarousel.component.VerticalCenteredCarousel
 
-val pagerState = rememberPagerState { pageCount }
-VerticalHeroCarousel(state = pagerState) { page ->
-    // Your item content
-}
-```
-
-### VerticalMultiBrowseCenteredCarousel
-
-A centered variant of the multi-browse carousel.
-
-```kotlin
-import com.hereliesaz.verticalcarousel.VerticalMultiBrowseCenteredCarousel
-
-val pagerState = rememberPagerState { pageCount }
-VerticalMultiBrowseCenteredCarousel(
-    state = pagerState,
-    preferredItemHeight = 450.dp,
-    contentPadding = PaddingValues(vertical = 120.dp),
-    itemSpacing = 16.dp
-) { page ->
+VerticalCenteredCarousel(
+    state = state,
+    itemHeight = 200.dp,
+    itemSpacing = 8.dp,
+    contentPadding = PaddingValues(vertical = 32.dp)
+) { itemIndex ->
     // Your item content
 }
 ```

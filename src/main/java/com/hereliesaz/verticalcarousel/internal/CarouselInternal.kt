@@ -11,7 +11,8 @@ import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.hereliesaz.verticalcarousel.CarouselItemInfo
+import androidx.compose.ui.util.lerp
+import com.hereliesaz.verticalcarousel.state.CarouselItemInfo
 import kotlin.math.abs
 import kotlin.math.sign
 
@@ -42,12 +43,32 @@ internal class KeylineState(
         return delta
     }
 
+    /**
+     * Calculates the interpolated size and mask for an item at a given index
+     * based on the current scroll offset.
+     */
     fun getItemInfo(index: Int): CarouselItemInfo {
-        // This logic would be more complex, interpolating between keylines
-        // For this implementation, we'll simplify
-        val keyline = keylines.getOrElse(index) { keylines.last() }
-        return CarouselItemInfo(keyline.size, keyline.mask)
+        val scroll = scrollOffset.value
+        val itemScrollOffset = (itemHeight.toPx() + itemSpacing.toPx()) * index + scroll
+        
+        // Find the keylines that the current item is between
+        val lowerKeylineIndex = keylines.indexOfLast { it.offset.toPx() <= itemScrollOffset }.coerceAtLeast(0)
+        val upperKeylineIndex = (lowerKeylineIndex + 1).coerceAtMost(keylines.lastIndex)
+        
+        val lowerKeyline = keylines[lowerKeylineIndex]
+        val upperKeyline = keylines[upperKeylineIndex]
+
+        // Calculate the progress between the two keylines
+        val progress = (itemScrollOffset - lowerKeyline.offset.toPx()) /
+                (upperKeyline.offset.toPx() - lowerKeyline.offset.toPx()).coerceAtLeast(1f)
+
+        // Interpolate the size and mask
+        val size = lerp(lowerKeyline.size, upperKeyline.size, progress)
+        val mask = lerp(lowerKeyline.mask, upperKeyline.mask, progress)
+
+        return CarouselItemInfo(size, mask)
     }
+
 
     internal fun getSnapStep(): Float {
         return (itemHeight + itemSpacing).toPx()
@@ -71,9 +92,11 @@ internal fun Strategy.calculateKeylines(state: KeylineState): List<Keyline> {
             val largeItemSize = state.itemHeight
             val smallItemSize = state.itemHeight * 0.7f
             listOf(
+                Keyline(offset = (-smallItemSize - state.itemSpacing).toPx().dp, size = smallItemSize, mask = 0f), // Offscreen top
                 Keyline(offset = 0.dp, size = smallItemSize, mask = 0.5f), // Top small item
                 Keyline(offset = smallItemSize + state.itemSpacing, size = largeItemSize, mask = 1f), // Focused item
-                Keyline(offset = smallItemSize + largeItemSize + (state.itemSpacing * 2), size = smallItemSize, mask = 0.5f) // Bottom small item
+                Keyline(offset = smallItemSize + largeItemSize + (state.itemSpacing * 2), size = smallItemSize, mask = 0.5f), // Bottom small item
+                Keyline(offset = smallItemSize + largeItemSize + smallItemSize + (state.itemSpacing * 3), size = smallItemSize, mask = 0f) // Offscreen bottom
             )
         }
     }
@@ -134,8 +157,6 @@ internal fun Placeable.PlacementScope.place(
     )
     val placeable = measurable.measure(itemConstraints)
 
-    // This is a simplified placement logic. A full implementation would interpolate
-    // the item's position and size based on the scroll offset and keyline list.
     val y = keylineState.keylines[index].offset.toPx() + keylineState.scrollOffset.value
 
     placeable.place(0, y.toInt())
