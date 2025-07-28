@@ -82,7 +82,7 @@ VerticalUncontainedCarousel(
 }
 ```
 
-<<<<<<< HEAD
+
 ### VerticalCenteredCarousel
 
 A carousel that keeps the current item centered in the viewport, allowing portions of the previous and next items to be visible.
@@ -99,7 +99,7 @@ VerticalCenteredCarousel(
     // Your item content
 }
 ```
-=======
+
 ### VerticalHeroCarousel
 
 A simple, full-height carousel for displaying one large item at a time.
@@ -130,4 +130,4 @@ VerticalMultiBrowseCenteredCarousel(
     // Your item content
 }
 ```
->>>>>>> origin/main
+
