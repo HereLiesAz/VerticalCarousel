@@ -36,6 +36,7 @@ fun VerticalMultiBrowseCarousel(
             .scrollable(
                 orientation = Vertical,
                 state = state.scrollableState,
+                flingBehavior = flingBehavior
             ),
         content = {
             for (i in 0 until state.itemCount()) {
