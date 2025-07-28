@@ -82,6 +82,7 @@ VerticalUncontainedCarousel(
 }
 ```
 
+<<<<<<< HEAD
 ### VerticalCenteredCarousel
 
 A carousel that keeps the current item centered in the viewport, allowing portions of the previous and next items to be visible.
@@ -98,3 +99,35 @@ VerticalCenteredCarousel(
     // Your item content
 }
 ```
+=======
+### VerticalHeroCarousel
+
+A simple, full-height carousel for displaying one large item at a time.
+
+```kotlin
+import com.hereliesaz.verticalcarousel.VerticalHeroCarousel
+
+val pagerState = rememberPagerState { pageCount }
+VerticalHeroCarousel(state = pagerState) { page ->
+    // Your item content
+}
+```
+
+### VerticalMultiBrowseCenteredCarousel
+
+A centered variant of the multi-browse carousel.
+
+```kotlin
+import com.hereliesaz.verticalcarousel.VerticalMultiBrowseCenteredCarousel
+
+val pagerState = rememberPagerState { pageCount }
+VerticalMultiBrowseCenteredCarousel(
+    state = pagerState,
+    preferredItemHeight = 450.dp,
+    contentPadding = PaddingValues(vertical = 120.dp),
+    itemSpacing = 16.dp
+) { page ->
+    // Your item content
+}
+```
+>>>>>>> origin/main
