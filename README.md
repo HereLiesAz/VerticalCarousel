@@ -62,22 +62,6 @@ VerticalUncontainedCarousel(
 }
 ```
 
-### VerticalFadingCarousel
-
-A carousel that applies a fading gradient to the top and bottom edges.
-
-```kotlin
-import com.hereliesaz.verticalcarousel.VerticalFadingCarousel
-
-val pagerState = rememberPagerState { pageCount }
-VerticalFadingCarousel(
-    state = pagerState,
-    itemHeight = 300.dp
-) { page ->
-    // Your item content
-}
-```
-
 ### VerticalHeroCarousel
 
 A simple, full-height carousel for displaying one large item at a time.
