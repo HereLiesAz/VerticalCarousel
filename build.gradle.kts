@@ -1,12 +1,12 @@
 plugins {
-    id("com.android.library") version "8.2.2"
-    id("org.jetbrains.kotlin.android") version "1.9.22"
+    id("com.android.library") version "8.11.1"
+    id("org.jetbrains.kotlin.android") version "2.2.0"
     id("maven-publish")
 }
 
 android {
     namespace = "com.hereliesaz.verticalcarousel"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 26
@@ -31,8 +31,8 @@ android {
 }
 
 dependencies {
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation(platform("androidx.compose:compose-bom:2024.02.01"))
+    implementation("androidx.core:core-ktx:1.16.0")
+    implementation(platform("androidx.compose:compose-bom:2025.07.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui-tooling-preview")
@@ -44,7 +44,7 @@ publishing {
         create<MavenPublication>("release") {
             groupId = "com.github.hereliesaz"
             artifactId = "VerticalCarousel"
-            version = "0.6.1" 
+            version = "0.6.6"
 
             afterEvaluate {
                 from(components["release"])
