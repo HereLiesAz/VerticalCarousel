@@ -1,6 +1,11 @@
 package com.hereliesaz.verticalcarousel
 
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.orientation.Vertical
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.unit.Dp
@@ -16,18 +21,30 @@ fun VerticalMultiBrowseCarousel(
     itemSpacing: Dp = 0.dp,
     content: @Composable CarouselItemScope.(itemIndex: Int) -> Unit
 ) {
-    state.keylineState = KeylineState(
-        itemHeight = preferredItemHeight,
-        itemSpacing = itemSpacing,
-        itemCount = state.itemCount()
-    )
+    val flingBehavior = state.fling(0f, spring())
+    state.keylineState = remember(preferredItemHeight, itemSpacing, state.itemCount()) {
+        KeylineState(
+            itemHeight = preferredItemHeight,
+            itemSpacing = itemSpacing,
+            itemCount = state.itemCount(),
+            strategy = KeylineState.Strategy.MultiBrowse
+        )
+    }
 
     Layout(
-        modifier = modifier,
+        modifier = modifier
+            .scrollable(
+                orientation = Vertical,
+                state = state.scrollableState,
+            ),
         content = {
             for (i in 0 until state.itemCount()) {
-                val scope = CarouselItemScopeImpl(CarouselItemInfo(preferredItemHeight, 0f))
-                scope.content(i)
+                Box {
+                    val scope = CarouselItemScopeImpl(
+                        carouselItemInfo = state.keylineState.getItemInfo(i)
+                    )
+                    scope.content(i)
+                }
             }
         }
     ) { measurables, constraints ->
