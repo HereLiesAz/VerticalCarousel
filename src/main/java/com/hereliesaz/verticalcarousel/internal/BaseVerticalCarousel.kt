@@ -1,6 +1,7 @@
 package com.hereliesaz.verticalcarousel.internal
 
 import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
@@ -30,40 +31,40 @@ internal fun BaseVerticalCarousel(
     Layout(
         modifier = modifier
             .pointerInput(state) {
-                // VelocityTracker is needed to calculate the fling velocity when the drag ends.
                 val velocityTracker = VelocityTracker()
                 detectDragGestures(
                     onDragStart = { velocityTracker.resetTracking() },
                     onDragEnd = {
                         coroutineScope.launch {
-                            val flingBehavior = CarouselFlingBehavior(
-                                scrollableState = state.scrollableState,
-                                keylineState = keylineState,
-                                snapAnimationSpec = flingSpec
-                            )
-                            // Use the velocityTracker to get the final velocity of the gesture.
                             val velocity = velocityTracker.calculateVelocity()
+                            val initialVelocity = velocity.y
 
-                            // performFling requires a ScrollScope, which we create an instance of.
-                            val scrollScope = object : androidx.compose.foundation.gestures.ScrollScope {
-                                override fun scrollBy(pixels: Float): Float {
-                                    return state.scrollableState.dispatchRawDelta(pixels)
-                                }
+                            // This is the logic from your CarouselFlingBehavior,
+                            // now adapted to be used directly here.
+                            val snapStep = keylineState.getSnapStep()
+                            if (abs(initialVelocity) < 0.1f || snapStep <= 0f) return@launch
+
+                            val targetIndex =
+                                (abs(keylineState.scrollOffset.value) / snapStep).toInt() +
+                                        if (initialVelocity > 0) -1 else 1
+                            val targetValue = targetIndex * snapStep * -1
+
+                            animate(
+                                initialValue = keylineState.scrollOffset.value,
+                                targetValue = targetValue,
+                                initialVelocity = initialVelocity,
+                                animationSpec = flingSpec
+                            ) { value, _ ->
+                                state.scrollableState.dispatchRawDelta(value - keylineState.scrollOffset.value)
                             }
-                            // Call the original fling behavior with the correct scope and velocity.
-                            scrollScope.performFling(velocity.y)
                         }
                     }
                 ) { change, dragAmount ->
                     if (abs(dragAmount.y) > abs(dragAmount.x)) {
-                        // It's a vertical drag, handle it.
                         change.consume()
-                        // Add the pointer event to the velocity tracker to track fling speed.
                         velocityTracker.addPosition(change.uptimeMillis, change.position)
-                        // Manually scroll the carousel state.
                         state.scrollableState.dispatchRawDelta(dragAmount.y)
                     }
-                    // If horizontal, do nothing and let the event propagate.
                 }
             },
         content = {
