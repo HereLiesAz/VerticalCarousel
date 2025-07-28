@@ -6,7 +6,7 @@ import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.gestures.FlingBehavior
 import androidx.compose.foundation.gestures.ScrollScope
 import androidx.compose.foundation.gestures.ScrollableState
-import androidx.compose.runtime.mutableStateOf // <-- This import is correct
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.layout.Measurable
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.unit.Constraints
@@ -41,9 +41,9 @@ internal class KeylineState(
         Uncontained
     }
 
-    // FIX: Corrected the typo from `mutableStateof` to `mutableStateOf`
     var scrollOffset = mutableStateOf(0f)
-    val keylines: List<Keyline> = strategy.calculateKeylines(this)
+    var containerSize: Dp = 0.dp // To be set by the layout
+    val keylines: List<Keyline> by lazy { strategy.calculateKeylines(this) }
 
     fun scrollBy(delta: Float): Float {
         val newScrollOffset = (scrollOffset.value + delta)
@@ -57,22 +57,30 @@ internal class KeylineState(
         val itemSpacingPx = itemSpacing.value * densityValue
 
         val scroll = scrollOffset.value
+        // The position of an item is its index multiplied by its full size (item + spacing),
+        // adjusted by the current scroll offset.
         val itemScrollOffset = (itemHeightPx + itemSpacingPx) * index + scroll
 
+        // Find the two keylines the item is currently between.
         val lowerKeylineIndex =
-            keylines.indexOfLast { (it.offset.value * densityValue) <= itemScrollOffset }
+            keylines.indexOfLast { it.offset.toPx() <= itemScrollOffset }
                 .coerceAtLeast(0)
         val upperKeylineIndex = (lowerKeylineIndex + 1).coerceAtMost(keylines.lastIndex)
 
         val lowerKeyline = keylines[lowerKeylineIndex]
         val upperKeyline = keylines[upperKeylineIndex]
 
-        val lowerKeylineOffsetPx = lowerKeyline.offset.value * densityValue
-        val upperKeylineOffsetPx = upperKeyline.offset.value * densityValue
+        val lowerKeylineOffsetPx = lowerKeyline.offset.toPx()
+        val upperKeylineOffsetPx = upperKeyline.offset.toPx()
 
-        val progress = (itemScrollOffset - lowerKeylineOffsetPx) /
-                (upperKeylineOffsetPx - lowerKeylineOffsetPx).coerceAtLeast(1f)
+        // Calculate the item's progress (0.0 to 1.0) between the two keylines.
+        val progress = if (upperKeylineOffsetPx - lowerKeylineOffsetPx != 0f) {
+            ((itemScrollOffset - lowerKeylineOffsetPx) / (upperKeylineOffsetPx - lowerKeylineOffsetPx)).coerceIn(0f, 1f)
+        } else {
+            0f
+        }
 
+        // Linearly interpolate the size and mask based on the progress.
         val size = lerp(lowerKeyline.size, upperKeyline.size, progress)
         val mask = lerp(lowerKeyline.mask, upperKeyline.mask, progress)
 
@@ -82,6 +90,8 @@ internal class KeylineState(
     internal fun getSnapStep(): Float {
         return (itemHeight.value + itemSpacing.value) * density.density
     }
+
+    private fun Keyline.toPx() = this.offset.value * density.density
 }
 
 internal fun KeylineState.Strategy.calculateKeylines(state: KeylineState): List<Keyline> {
@@ -105,29 +115,25 @@ internal fun KeylineState.Strategy.calculateKeylines(state: KeylineState): List<
 
             KeylineState.Strategy.MultiBrowse -> {
                 val largeItemSize = state.itemHeight
-                val smallItemSize = state.itemHeight * 0.7f
+                // The small items should be a fraction of the large item size.
+                val smallItemSize = state.itemHeight * 0.5f
+                val containerHeight = state.containerSize.toPx()
+
+                // Calculate the center of the container.
+                val center = containerHeight / 2f
+                val largeItemCenter = center - largeItemSize.toPx() / 2f
+
                 listOf(
-                    Keyline(
-                        offset = (-smallItemSize - state.itemSpacing),
-                        size = smallItemSize,
-                        mask = 0f
-                    ),
-                    Keyline(offset = 0.dp, size = smallItemSize, mask = 0.5f),
-                    Keyline(
-                        offset = smallItemSize + state.itemSpacing,
-                        size = largeItemSize,
-                        mask = 1f
-                    ),
-                    Keyline(
-                        offset = smallItemSize + largeItemSize + (state.itemSpacing * 2),
-                        size = smallItemSize,
-                        mask = 0.5f
-                    ),
-                    Keyline(
-                        offset = smallItemSize + largeItemSize + smallItemSize + (state.itemSpacing * 3),
-                        size = smallItemSize,
-                        mask = 0f
-                    )
+                    // Off-screen top
+                    Keyline(offset = (-largeItemSize).toDp(), size = smallItemSize, mask = 0f),
+                    // Top small item
+                    Keyline(offset = (largeItemCenter - smallItemSize.toPx() - state.itemSpacing.toPx()).toDp(), size = smallItemSize, mask = 0.5f),
+                    // Focused large item (should be centered)
+                    Keyline(offset = largeItemCenter.toDp(), size = largeItemSize, mask = 1f),
+                    // Bottom small item
+                    Keyline(offset = (largeItemCenter + largeItemSize.toPx() + state.itemSpacing.toPx()).toDp(), size = smallItemSize, mask = 0.5f),
+                    // Off-screen bottom
+                    Keyline(offset = containerHeight.toDp(), size = smallItemSize, mask = 0f)
                 )
             }
         }
@@ -152,7 +158,7 @@ internal class CarouselFlingBehavior(
 ) : FlingBehavior {
     override suspend fun ScrollScope.performFling(initialVelocity: Float): Float {
         val snapStep = keylineState.getSnapStep()
-        if (abs(initialVelocity) < 0.1f) return 0f
+        if (abs(initialVelocity) < 0.1f || snapStep <= 0f) return 0f
         val targetIndex = (abs(keylineState.scrollOffset.value) / snapStep).toInt() +
                 if (initialVelocity > 0) -1 else 1
         val targetValue = targetIndex * snapStep * -1
@@ -188,8 +194,28 @@ internal fun Placeable.PlacementScope.place(
     )
     val placeable = measurable.measure(itemConstraints)
 
-    val yOffsetPx = (keylineState.keylines[index].offset.value * densityValue)
-    val y = yOffsetPx + keylineState.scrollOffset.value
+    // The y position is calculated based on the item's scroll offset relative to the keylines.
+    val itemScrollOffset = (keylineState.itemHeight.toPx() + keylineState.itemSpacing.toPx()) * index + keylineState.scrollOffset.value
 
-    placeable.place(0, y.roundToInt())
+    val lowerKeylineIndex =
+        keylineState.keylines.indexOfLast { it.offset.toPx() <= itemScrollOffset }
+            .coerceAtLeast(0)
+    val upperKeylineIndex = (lowerKeylineIndex + 1).coerceAtMost(keylineState.keylines.lastIndex)
+
+    val lowerKeyline = keylineState.keylines[lowerKeylineIndex]
+    val upperKeyline = keylineState.keylines[upperKeylineIndex]
+
+    val progress = if (upperKeyline.offset.toPx() - lowerKeyline.offset.toPx() != 0f) {
+        ((itemScrollOffset - lowerKeyline.offset.toPx()) / (upperKeyline.offset.toPx() - lowerKeyline.offset.toPx())).coerceIn(0f, 1f)
+    } else {
+        0f
+    }
+
+    // Linearly interpolate the y-position based on the keyline offsets.
+    val y = lerp(lowerKeyline.offset.toPx(), upperKeyline.offset.toPx(), progress)
+    val centeredX = (constraints.maxWidth - placeable.width) / 2
+
+    placeable.placeRelative(centeredX, y.roundToInt())
 }
+
+private fun Dp.toPx(density: Density = Density(1f)) = this.value * density.density

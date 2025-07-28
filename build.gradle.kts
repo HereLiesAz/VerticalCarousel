@@ -2,7 +2,7 @@ plugins {
     id("com.android.library") version "8.11.1"
     id("org.jetbrains.kotlin.android") version "2.2.0"
     id("maven-publish")
-    id("org.jetbrains.kotlin.plugin.compose") version "2.2.0"
+    id("org.jetbrains.kotlin.plugin.compose") version "2.2.0" id()
 
 }
 
@@ -51,7 +51,7 @@ publishing {
         create<MavenPublication>("release") {
             groupId = "com.github.hereliesaz"
             artifactId = "VerticalCarousel"
-            version = "0.7.6"
+            version = "0.7.86"
 
             afterEvaluate {
                 from(components["release"])
