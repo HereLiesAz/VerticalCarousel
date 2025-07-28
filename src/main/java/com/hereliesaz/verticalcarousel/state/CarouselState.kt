@@ -1,7 +1,6 @@
-package com.hereliesaz.verticalcarousel
+package com.hereliesaz.verticalcarousel.state
 
 import androidx.compose.animation.core.AnimationSpec
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.gestures.FlingBehavior
 import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.runtime.Composable

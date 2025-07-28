@@ -1,9 +1,8 @@
-package com.hereliesaz.verticalcarousel
+package com.hereliesaz.verticalcarousel.state
 
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Dp
 
 interface CarouselItemScope {
