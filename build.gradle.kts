@@ -2,6 +2,8 @@ plugins {
     id("com.android.library") version "8.11.1"
     id("org.jetbrains.kotlin.android") version "2.2.0"
     id("maven-publish")
+    id("org.jetbrains.kotlin.plugin.compose") version "2.2.0"
+
 }
 
 android {
@@ -25,9 +27,7 @@ android {
         compose = true
     }
 
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.8"
-    }
+
 }
 
 dependencies {
@@ -36,15 +36,22 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.material3:material3:1.3.2")
+    implementation("androidx.compose.foundation:foundation")
+    implementation("androidx.compose.ui:ui-unit")
+    testImplementation(kotlin("test"))
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.foundation:foundation")
+    implementation("androidx.compose.foundation:foundation-layout")
+
 }
 
-// This block explicitly defines the library's coordinates for publishing.
 publishing {
     publications {
         create<MavenPublication>("release") {
             groupId = "com.github.hereliesaz"
             artifactId = "VerticalCarousel"
-            version = "0.6.6"
+            version = "0.6.7"
 
             afterEvaluate {
                 from(components["release"])

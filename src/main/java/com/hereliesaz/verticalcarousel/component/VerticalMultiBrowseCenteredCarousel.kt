@@ -1,4 +1,4 @@
-package com.hereliesaz.verticalcarousel
+package com.hereliesaz.verticalcarousel.component
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
