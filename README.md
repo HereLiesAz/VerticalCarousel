@@ -1,6 +1,6 @@
 # VerticalCarousel for Jetpack Compose
 
-A library providing the vertical Material 3 carousels that Google hasn't... yet. This provides a suite of vertical carousel components that mirror the API and behavior of the official horizontal M3 carousels, built around a spec-compliant Keyline-based engine.
+A library providing the vertical Material 3 carousels that Google hasn't yet. This provides a suite of vertical carousel components that mirror the API and behavior of the official horizontal M3 carousels, built around a spec-compliant Keyline-based engine.
 
 ## Installation
 
