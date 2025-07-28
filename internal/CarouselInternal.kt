@@ -22,15 +22,18 @@ internal data class Keyline(
 )
 
 internal class KeylineState(
-    val itemHeight: Dp,
+    var itemHeight: Dp,
     val itemSpacing: Dp,
     val itemCount: Int,
     val strategy: Strategy
 ) {
-    enum class Strategy { MultiBrowse }
+    enum class Strategy {
+        Hero,
+        MultiBrowse,
+        Uncontained
+    }
 
     var scrollOffset = mutableStateOf(0f)
-
     val keylines: List<Keyline> = strategy.calculateKeylines(this)
 
     fun scrollBy(delta: Float): Float {
@@ -40,7 +43,9 @@ internal class KeylineState(
     }
 
     fun getItemInfo(index: Int): CarouselItemInfo {
-        val keyline = keylines[index]
+        // This logic would be more complex, interpolating between keylines
+        // For this implementation, we'll simplify
+        val keyline = keylines.getOrElse(index) { keylines.last() }
         return CarouselItemInfo(keyline.size, keyline.mask)
     }
 
@@ -49,6 +54,32 @@ internal class KeylineState(
     }
 }
 
+// Keyline calculation strategies
+internal fun Strategy.calculateKeylines(state: KeylineState): List<Keyline> {
+    return when (this) {
+        KeylineState.Strategy.Hero -> {
+            (0 until state.itemCount).map {
+                Keyline(offset = state.itemHeight * it, size = state.itemHeight, mask = 1f)
+            }
+        }
+        KeylineState.Strategy.Uncontained -> {
+            (0 until state.itemCount).map {
+                Keyline(offset = (state.itemHeight + state.itemSpacing) * it, size = state.itemHeight, mask = 1f)
+            }
+        }
+        KeylineState.Strategy.MultiBrowse -> {
+            val largeItemSize = state.itemHeight
+            val smallItemSize = state.itemHeight * 0.7f
+            listOf(
+                Keyline(offset = 0.dp, size = smallItemSize, mask = 0.5f), // Top small item
+                Keyline(offset = smallItemSize + state.itemSpacing, size = largeItemSize, mask = 1f), // Focused item
+                Keyline(offset = smallItemSize + largeItemSize + (state.itemSpacing * 2), size = smallItemSize, mask = 0.5f) // Bottom small item
+            )
+        }
+    }
+}
+
+
 internal class CarouselScrollableState(val onDelta: (Float) -> Float) : ScrollableState {
     override val isScrollInProgress: Boolean = true
     override fun dispatchRawDelta(delta: Float): Float = onDelta(delta)
@@ -56,7 +87,7 @@ internal class CarouselScrollableState(val onDelta: (Float) -> Float) : Scrollab
         scrollPriority: androidx.compose.foundation.MutatePriority,
         block: suspend ScrollScope.() -> Unit
     ) {
-        // No-op
+        // No-op for this implementation
     }
 }
 
@@ -67,7 +98,13 @@ internal class CarouselFlingBehavior(
 ) : FlingBehavior {
     override suspend fun performFling(initialVelocity: Float): Float {
         val snapStep = keylineState.getSnapStep()
-        val targetValue = (keylineState.scrollOffset.value / snapStep).toInt() * snapStep
+        if (abs(initialVelocity) < 0.1f) return 0f
+
+        val targetIndex = (abs(keylineState.scrollOffset.value) / snapStep).toInt() +
+                if (initialVelocity > 0) -1 else 1
+
+        val targetValue = (targetIndex * snapStep) * sign(keylineState.scrollOffset.value)
+
 
         var remainingVelocity = initialVelocity
         animate(
@@ -97,6 +134,8 @@ internal fun Placeable.PlacementScope.place(
     )
     val placeable = measurable.measure(itemConstraints)
 
+    // This is a simplified placement logic. A full implementation would interpolate
+    // the item's position and size based on the scroll offset and keyline list.
     val y = keylineState.keylines[index].offset.toPx() + keylineState.scrollOffset.value
 
     placeable.place(0, y.toInt())
