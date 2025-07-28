@@ -1,0 +1,858 @@
+﻿Android Project Backup for AI Analysis
+
+Generated on: 2025-07-28 05:17:27
+
+Included Modules/Files: src
+
+
+
+--- PROJECT FILE TREE (Status based on module selection) ---
+
+VerticalCarousel
++-- build
+|  +-- generated [DIR EXCLUDED]
+|  +-- intermediates [DIR EXCLUDED]
+|  +-- kotlin [DIR EXCLUDED]
+|  +-- outputs [DIR EXCLUDED]
+|  +-- reports [DIR EXCLUDED]
+|  \-- tmp [DIR EXCLUDED]
++-- gradle
+|  \-- wrapper
+|     +-- gradle-wrapper.jar
+|     \-- gradle-wrapper.properties
++-- src
+|  +-- androidTest
+|  |  \-- java
+|  |     \-- com
+|  |        \-- hereliesaz
+|  |           \-- verticalcarousel
+|  |              +-- ExampleInstrumentedTest.kt [INCLUDED]
+|  |              \-- VerticalCarouselTest.kt [INCLUDED]
+|  +-- main
+|  |  \-- java
+|  |     \-- com
+|  |        \-- hereliesaz
+|  |           \-- verticalcarousel
+|  |              +-- component
+|  |              |  +-- VerticalCenteredCarousel.kt [INCLUDED]
+|  |              |  +-- VerticalHeroCarousel.kt [INCLUDED]
+|  |              |  +-- VerticalMultiBrowseCarousel.kt [INCLUDED]
+|  |              |  +-- VerticalMultiBrowseCenteredCarousel.kt [INCLUDED]
+|  |              |  \-- VerticalUncontainedCarousel.kt [INCLUDED]
+|  |              +-- internal
+|  |              |  \-- CarouselInternal.kt [INCLUDED]
+|  |              \-- state
+|  |                 +-- CarouselItemScope.kt [INCLUDED]
+|  |                 \-- CarouselState.kt [INCLUDED]
+|  \-- test
+|     \-- java
+|        \-- com
+|           \-- hereliesaz
+|              \-- verticalcarousel
+|                 +-- ExampleUnitTest.kt [INCLUDED]
+|                 \-- KeylineStateTest.kt [INCLUDED]
++-- .gitignore
++-- backup_for_ai.ps1
++-- backup_for_ai_20250728_051725.txt
++-- build.gradle.kts
++-- gradle.properties
++-- gradlew
++-- gradlew.bat
++-- LICENSE
++-- local.properties
++-- README.md
+\-- settings.gradle.kts
+
+
+
+--- INCLUDED FILE CONTENTS (from selected modules & root) ---
+
+Each file begins with a '--- FILE: [relative_path] ---' header.
+
+
+
+--- FILE: src/androidTest/java/com/hereliesaz/verticalcarousel/ExampleInstrumentedTest.kt ---
+
+package com.hereliesaz.verticalcarousel
+
+  import androidx.test.platform.app.InstrumentationRegistry
+  import androidx.test.ext.junit.runners.AndroidJUnit4
+
+  import org.junit.Test
+  import org.junit.runner.RunWith
+
+  import org.junit.Assert.*
+
+  /**
+   * Instrumented test, which will execute on an Android device.
+   *
+   * See [testing documentation](http://d.android.com/tools/testing).
+   */
+  @RunWith(AndroidJUnit4::class)
+  class ExampleInstrumentedTest {
+    @Test
+    fun useAppContext() {
+      // Context of the app under test.
+      val appContext = InstrumentationRegistry.getInstrumentation().targetContext
+      assertEquals("com.hereliesaz.verticalcarousel", appContext.packageName)
+    }
+  }
+
+
+--- FILE: src/androidTest/java/com/hereliesaz/verticalcarousel/VerticalCarouselTest.kt ---
+
+package com.hereliesaz.verticalcarousel
+
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.unit.dp
+import com.hereliesaz.verticalcarousel.component.VerticalHeroCarousel
+import com.hereliesaz.verticalcarousel.component.VerticalMultiBrowseCarousel
+import com.hereliesaz.verticalcarousel.state.rememberCarouselState
+import org.junit.Rule
+import org.junit.Test
+
+class VerticalCarouselTest {
+
+    @get:Rule
+    val composeTestRule = createComposeRule()
+
+    @Test
+    fun verticalHeroCarousel_displaysContent() {
+        composeTestRule.setContent {
+            val state = rememberCarouselState(itemCount = { 1 })
+            VerticalHeroCarousel(state = state, modifier = Modifier.fillMaxSize()) {
+                TestItem(text = "Item 0")
+            }
+        }
+        composeTestRule.onNodeWithTag("item_0").assertIsDisplayed()
+    }
+
+    @Test
+    fun verticalMultiBrowseCarousel_displaysContent() {
+        composeTestRule.setContent {
+            val state = rememberCarouselState(itemCount = { 3 })
+            VerticalMultiBrowseCarousel(
+                state = state,
+                modifier = Modifier.fillMaxSize(),
+                preferredItemHeight = 200.dp
+            ) { index ->
+                TestItem(text = "Item $index")
+            }
+        }
+        composeTestRule.onNodeWithTag("item_1").assertIsDisplayed()
+    }
+}
+
+@Composable
+private fun TestItem(text: String) {
+    Text(text, modifier = Modifier.height(100.dp).testTag("item_${text.last()}"))
+}
+
+
+--- FILE: src/main/java/com/hereliesaz/verticalcarousel/component/VerticalCenteredCarousel.kt ---
+
+package com.hereliesaz.verticalcarousel.component
+
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.gestures.FlingBehavior
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.scrollable // <--- Ensure this import is here
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalDensity // <--- ADDED THIS IMPORT
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import com.hereliesaz.verticalcarousel.internal.KeylineState
+import com.hereliesaz.verticalcarousel.internal.place
+import com.hereliesaz.verticalcarousel.state.CarouselItemScope
+import com.hereliesaz.verticalcarousel.state.CarouselItemScopeImpl
+import com.hereliesaz.verticalcarousel.state.CarouselState
+
+@Composable
+fun VerticalCenteredCarousel(
+    state: CarouselState,
+    modifier: Modifier = Modifier,
+    itemHeight: Dp,
+    itemSpacing: Dp = 0.dp,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
+    content: @Composable CarouselItemScope.(itemIndex: Int) -> Unit
+) {
+    val flingBehavior: FlingBehavior = state.fling(0f, spring())
+    val density = LocalDensity.current
+    state.keylineState = remember(itemHeight, itemSpacing, state.itemCount(), density) { // <--- ADDED DENSITY TO REMEMBER KEYS
+        KeylineState(
+            density = density,
+            itemHeight = itemHeight,
+            itemSpacing = itemSpacing,
+            itemCount = state.itemCount(),
+            strategy = KeylineState.Strategy.Uncontained,
+            contentPadding = contentPadding
+        )
+    }
+
+    Layout(
+        modifier = modifier
+            .scrollable( // <--- Should resolve now
+                orientation = Orientation.Vertical,
+                state = state.scrollableState,
+                flingBehavior = flingBehavior
+            ),
+        content = {
+            for (i in 0 until state.itemCount()) {
+                Box {
+                    val scope = CarouselItemScopeImpl(
+                        carouselItemInfo = state.keylineState.getItemInfo(i)
+                    )
+                    scope.content(i)
+                }
+            }
+        }
+    ) { measurables, constraints ->
+        layout(constraints.maxWidth, constraints.maxHeight) {
+            measurables.forEachIndexed { index, measurable ->
+                place(
+                    index = index,
+                    measurable = measurable,
+                    constraints = constraints,
+                    keylineState = state.keylineState
+                )
+            }
+        }
+    }
+}
+
+
+--- FILE: src/main/java/com/hereliesaz/verticalcarousel/component/VerticalHeroCarousel.kt ---
+
+package com.hereliesaz.verticalcarousel.component
+
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.gestures.FlingBehavior
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalDensity // <--- ADDED THIS IMPORT
+import androidx.compose.ui.unit.dp
+import com.hereliesaz.verticalcarousel.internal.KeylineState
+import com.hereliesaz.verticalcarousel.internal.place
+import com.hereliesaz.verticalcarousel.state.CarouselItemScope
+import com.hereliesaz.verticalcarousel.state.CarouselItemScopeImpl
+import com.hereliesaz.verticalcarousel.state.CarouselState
+
+@Composable
+fun VerticalHeroCarousel(
+    state: CarouselState,
+    modifier: Modifier = Modifier,
+    content: @Composable CarouselItemScope.(itemIndex: Int) -> Unit
+) {
+    val flingBehavior: FlingBehavior = state.fling(0f, spring())
+    val density = LocalDensity.current // <--- GET CURRENT DENSITY
+    state.keylineState = remember(state.itemCount(), density) { // <--- ADDED DENSITY TO REMEMBER KEYS
+        KeylineState(
+            density = density, // <--- PASSED DENSITY
+            itemHeight = 0.dp, // Item height is determined by container
+            itemSpacing = 0.dp,
+            itemCount = state.itemCount(),
+            strategy = KeylineState.Strategy.Hero
+        )
+    }
+
+    Layout(
+        modifier = modifier
+            .scrollable(
+                orientation = Orientation.Vertical,
+                state = state.scrollableState,
+                flingBehavior = flingBehavior
+            ),
+        content = {
+            for (i in 0 until state.itemCount()) {
+                Box {
+                    val scope = CarouselItemScopeImpl(
+                        carouselItemInfo = state.keylineState.getItemInfo(i)
+                    )
+                    scope.content(i)
+                }
+            }
+        }
+    ) { measurables, constraints ->
+        state.keylineState.itemHeight = with(density) { constraints.maxHeight.toDp() } // <--- USED DENSITY FOR TO DP CONVERSION
+        layout(constraints.maxWidth, constraints.maxHeight) {
+            measurables.forEachIndexed { index, measurable ->
+                place(
+                    index = index,
+                    measurable = measurable,
+                    constraints = constraints,
+                    keylineState = state.keylineState
+                )
+            }
+        }
+    }
+}
+
+
+--- FILE: src/main/java/com/hereliesaz/verticalcarousel/component/VerticalMultiBrowseCarousel.kt ---
+
+package com.hereliesaz.verticalcarousel.component
+
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.gestures.FlingBehavior
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.scrollable // <--- Ensure this import is here
+import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.scrollable // Single import for semantics scrollable
+import androidx.compose.ui.platform.LocalDensity // <--- ADDED THIS IMPORT
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import com.hereliesaz.verticalcarousel.internal.KeylineState
+import com.hereliesaz.verticalcarousel.internal.place
+import com.hereliesaz.verticalcarousel.state.CarouselItemScope
+import com.hereliesaz.verticalcarousel.state.CarouselItemScopeImpl
+import com.hereliesaz.verticalcarousel.state.CarouselState
+
+@Composable
+fun VerticalMultiBrowseCarousel(
+    state: CarouselState,
+    modifier: Modifier = Modifier,
+    preferredItemHeight: Dp,
+    itemSpacing: Dp = 0.dp,
+    content: @Composable CarouselItemScope.(itemIndex: Int) -> Unit
+) {
+    val flingBehavior: FlingBehavior = state.fling(0f, spring())
+    val density = LocalDensity.current // <--- GET CURRENT DENSITY
+    state.keylineState = remember(preferredItemHeight, itemSpacing, state.itemCount(), density) { // <--- ADDED DENSITY TO REMEMBER KEYS
+        KeylineState(
+            density = density, // <--- PASSED DENSITY
+            itemHeight = preferredItemHeight,
+            itemSpacing = itemSpacing,
+            itemCount = state.itemCount(),
+            strategy = KeylineState.Strategy.MultiBrowse
+        )
+    }
+
+    Layout(
+        modifier = modifier
+            .scrollable( // <--- Should resolve now
+                orientation = Orientation.Vertical,
+                state = state.scrollableState,
+                flingBehavior = flingBehavior
+            )
+            .semantics {
+                scrollable(
+                    state = state.scrollableState,
+                    orientation = Orientation.Vertical,
+                    reverseScrolling = true
+                )
+            },
+        content = {
+            for (i in 0 until state.itemCount()) {
+                Box {
+                    val scope = CarouselItemScopeImpl(
+                        carouselItemInfo = state.keylineState.getItemInfo(i)
+                    )
+                    scope.content(i)
+                }
+            }
+        }
+    ) { measurables, constraints ->
+        layout(constraints.maxWidth, constraints.maxHeight) {
+            measurables.forEachIndexed { index, measurable ->
+                place(
+                    index = index,
+                    measurable = measurable,
+                    constraints = constraints,
+                    keylineState = state.keylineState
+                )
+            }
+        }
+    }
+}
+
+
+--- FILE: src/main/java/com/hereliesaz/verticalcarousel/component/VerticalMultiBrowseCenteredCarousel.kt ---
+
+package com.hereliesaz.verticalcarousel.component
+
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.pager.PageSize
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.pager.VerticalPager
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.lerp
+import kotlin.math.absoluteValue
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun VerticalMultiBrowseCenteredCarousel(
+    state: PagerState,
+    modifier: Modifier = Modifier,
+    preferredItemHeight: Dp,
+    itemSpacing: Dp = 0.dp,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
+    content: @Composable (page: Int) -> Unit,
+) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        VerticalPager(
+            state = state,
+            modifier = Modifier.fillMaxSize(),
+            pageSize = PageSize.Fixed(preferredItemHeight),
+            contentPadding = contentPadding,
+            pageSpacing = itemSpacing
+        ) { page ->
+            val pageOffset = (
+                (state.currentPage - page) + state.currentPageOffsetFraction
+                ).absoluteValue
+
+            val scale = lerp(1f, 0.85f, pageOffset)
+            val alpha = lerp(1f, 0.5f, pageOffset)
+
+            Box(
+                modifier = Modifier
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        this.alpha = alpha
+                    }
+            ) {
+                content(page)
+            }
+        }
+    }
+}
+
+
+
+--- FILE: src/main/java/com/hereliesaz/verticalcarousel/component/VerticalUncontainedCarousel.kt ---
+
+package com.hereliesaz.verticalcarousel.component
+
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.gestures.FlingBehavior
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalDensity // <--- ADDED THIS IMPORT
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import com.hereliesaz.verticalcarousel.internal.KeylineState
+import com.hereliesaz.verticalcarousel.internal.place
+import com.hereliesaz.verticalcarousel.state.CarouselItemScope
+import com.hereliesaz.verticalcarousel.state.CarouselItemScopeImpl
+import com.hereliesaz.verticalcarousel.state.CarouselState
+
+@Composable
+fun VerticalUncontainedCarousel(
+    state: CarouselState,
+    modifier: Modifier = Modifier,
+    itemHeight: Dp,
+    itemSpacing: Dp = 0.dp,
+    content: @Composable CarouselItemScope.(itemIndex: Int) -> Unit
+) {
+    val flingBehavior: FlingBehavior = state.fling(0f, spring())
+    val density = LocalDensity.current // <--- GET CURRENT DENSITY
+    state.keylineState = remember(itemHeight, itemSpacing, state.itemCount(), density) { // <--- ADDED DENSITY TO REMEMBER KEYS
+        KeylineState(
+            density = density, // <--- PASSED DENSITY
+            itemHeight = itemHeight,
+            itemSpacing = itemSpacing,
+            itemCount = state.itemCount(),
+            strategy = KeylineState.Strategy.Uncontained
+        )
+    }
+
+    Layout(
+        modifier = modifier
+            .scrollable(
+                orientation = Orientation.Vertical,
+                state = state.scrollableState,
+                flingBehavior = flingBehavior
+            ),
+        content = {
+            for (i in 0 until state.itemCount()) {
+                Box {
+                    val scope = CarouselItemScopeImpl(
+                        carouselItemInfo = state.keylineState.getItemInfo(i)
+                    )
+                    scope.content(i)
+                }
+            }
+        }
+    ) { measurables, constraints ->
+        layout(constraints.maxWidth, constraints.maxHeight) {
+            measurables.forEachIndexed { index, measurable ->
+                place(
+                    index = index,
+                    measurable = measurable,
+                    constraints = constraints,
+                    keylineState = state.keylineState
+                )
+            }
+        }
+    }
+}
+
+
+--- FILE: src/main/java/com/hereliesaz/verticalcarousel/internal/CarouselInternal.kt ---
+
+package com.hereliesaz.verticalcarousel.internal
+
+import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.animate
+import androidx.compose.foundation.MutatePriority
+import androidx.compose.foundation.gestures.FlingBehavior
+import androidx.compose.foundation.gestures.ScrollScope
+import androidx.compose.foundation.gestures.ScrollableState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.layout.Measurable
+import androidx.compose.ui.layout.Placeable
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.lerp
+import com.hereliesaz.verticalcarousel.state.CarouselItemInfo
+import kotlin.math.abs
+import kotlin.math.sign
+import androidx.compose.ui.unit.Density // Keep this import
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
+
+
+internal data class Keyline(
+    val offset: Dp,
+    val size: Dp,
+    val mask: Float,
+)
+
+internal class KeylineState(
+    val density: Density, // <--- ADDED THIS PARAMETER
+    var itemHeight: Dp,
+    val itemSpacing: Dp,
+    val itemCount: Int,
+    val strategy: Strategy,
+    val contentPadding: androidx.compose.foundation.layout.PaddingValues = androidx.compose.foundation.layout.PaddingValues(0.dp)
+) {
+    enum class Strategy {
+        Hero,
+        MultiBrowse,
+        Uncontained
+    }
+
+    var scrollOffset = mutableStateOf(0f)
+    // Keylines now explicitly use the density from the state for calculation
+    val keylines: List<Keyline> = strategy.calculateKeylines(this) // This will internally use the 'density' from 'this' (KeylineState)
+
+    fun scrollBy(delta: Float): Float {
+        val newScrollOffset = (scrollOffset.value + delta)
+        scrollOffset.value = newScrollOffset
+        return delta
+    }
+
+    fun getItemInfo(index: Int): CarouselItemInfo {
+        return with(density) { // <--- WRAPPED WITH DENSITY SCOPE
+            val scroll = scrollOffset.value
+            val itemScrollOffset = (itemHeight.toPx() + itemSpacing.toPx()) * index + scroll
+
+            val lowerKeylineIndex =
+                keylines.indexOfLast { it.offset.toPx() <= itemScrollOffset }.coerceAtLeast(0)
+            val upperKeylineIndex = (lowerKeylineIndex + 1).coerceAtMost(keylines.lastIndex)
+
+            val lowerKeyline = keylines[lowerKeylineIndex]
+            val upperKeyline = keylines[upperKeylineIndex]
+
+            val progress = (itemScrollOffset - lowerKeyline.offset.toPx()) /
+                    (upperKeyline.offset.toPx() - lowerKeyline.offset.toPx()).coerceAtLeast(1f)
+
+            val size = androidx.compose.ui.unit.lerp(lowerKeyline.size, upperKeyline.size, progress) // Explicit lerp for Dp
+            val mask = lerp(lowerKeyline.mask, upperKeyline.mask, progress)
+
+            CarouselItemInfo(size, mask)
+        }
+    }
+
+    internal fun getSnapStep(): Float {
+        return with(density) { // <--- WRAPPED WITH DENSITY SCOPE
+            (itemHeight + itemSpacing).toPx()
+        }
+    }
+}
+
+// FIX: Corrected 'this' reference in when statement
+internal fun KeylineState.Strategy.calculateKeylines(state: KeylineState): List<Keyline> {
+    return with(state.density) { // 'this' here refers to Density
+        when (this@calculateKeylines) { // <--- CRITICAL FIX: Use 'this@calculateKeylines' to refer to Strategy
+            KeylineState.Strategy.Hero -> {
+                (0 until state.itemCount).map {
+                    Keyline(offset = state.itemHeight * it, size = state.itemHeight, mask = 1f)
+                }
+            }
+            KeylineState.Strategy.Uncontained -> {
+                (0 until state.itemCount).map {
+                    Keyline(offset = (state.itemHeight + state.itemSpacing) * it, size = state.itemHeight, mask = 1f)
+                }
+            }
+            KeylineState.Strategy.MultiBrowse -> {
+                val largeItemSize = state.itemHeight
+                val smallItemSize = state.itemHeight * 0.7f
+                listOf(
+                    Keyline(offset = (-smallItemSize - state.itemSpacing), size = smallItemSize, mask = 0f), // Offscreen top
+                    Keyline(offset = 0.dp, size = smallItemSize, mask = 0.5f), // Top small item
+                    Keyline(offset = smallItemSize + state.itemSpacing, size = largeItemSize, mask = 1f), // Focused item
+                    Keyline(offset = smallItemSize + largeItemSize + (state.itemSpacing * 2), size = smallItemSize, mask = 0.5f), // Bottom small item
+                    Keyline(offset = smallItemSize + largeItemSize + smallItemSize + (state.itemSpacing * 3), size = smallItemSize, mask = 0f) // Offscreen bottom
+                )
+            }
+        }
+    }
+}
+
+
+internal class CarouselScrollableState(val onDelta: (Float) -> Float) : ScrollableState {
+    override val isScrollInProgress: Boolean = true
+    override fun dispatchRawDelta(delta: Float): Float = onDelta(delta)
+    override suspend fun scroll(
+        scrollPriority: MutatePriority,
+        block: suspend ScrollScope.() -> Unit
+    ) {
+        // No-op for this implementation
+    }
+}
+
+internal class CarouselFlingBehavior(
+    val scrollableState: ScrollableState,
+    val keylineState: KeylineState,
+    val snapAnimationSpec: AnimationSpec<Float>
+) : FlingBehavior {
+    // CORRECTED SIGNATURE with ScrollScope receiver
+    override suspend fun ScrollScope.performFling(initialVelocity: Float): Float {
+        val snapStep = keylineState.getSnapStep()
+        if (abs(initialVelocity) < 0.1f) return 0f
+
+        val targetIndex = (abs(keylineState.scrollOffset.value) / snapStep).toInt() +
+                if (initialVelocity > 0) -1 else 1
+
+        val targetValue = targetIndex * snapStep * -1 // Ensure correct direction based on target index
+
+        var remainingVelocity = initialVelocity
+        animate(
+            initialValue = keylineState.scrollOffset.value,
+            targetValue = targetValue,
+            initialVelocity = initialVelocity,
+            animationSpec = snapAnimationSpec
+        ) { value, velocity ->
+            scrollableState.dispatchRawDelta(value - keylineState.scrollOffset.value)
+            remainingVelocity = velocity
+        }
+        return remainingVelocity
+    }
+}
+
+
+internal fun Placeable.PlacementScope.place(
+    index: Int,
+    measurable: Measurable,
+    constraints: Constraints,
+    keylineState: KeylineState
+) {
+    // These methods (roundToPx, toPx) are resolved because PlacementScope provides Density context
+    val itemInfo = keylineState.getItemInfo(index)
+    val itemConstraints = constraints.copy(
+        minHeight = itemInfo.size.roundToPx(),
+        maxHeight = itemInfo.size.roundToPx()
+    )
+    val placeable = measurable.measure(itemConstraints)
+
+    val y = keylineState.keylines[index].offset.toPx() + keylineState.scrollOffset.value
+
+    placeable.place(0, y.toInt())
+}
+
+
+--- FILE: src/main/java/com/hereliesaz/verticalcarousel/state/CarouselItemScope.kt ---
+
+package com.hereliesaz.verticalcarousel.state
+
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Dp
+
+interface CarouselItemScope {
+    val carouselItemInfo: CarouselItemInfo
+    fun Modifier.maskClip(shape: androidx.compose.ui.graphics.Shape): Modifier
+}
+
+data class CarouselItemInfo(
+    val size: Dp,
+    val mask: Float,
+)
+
+internal class CarouselItemScopeImpl(
+    override val carouselItemInfo: CarouselItemInfo
+) : CarouselItemScope {
+    override fun Modifier.maskClip(shape: androidx.compose.ui.graphics.Shape): Modifier {
+        return this
+            .graphicsLayer(
+                shape = shape,
+                clip = true,
+                alpha = carouselItemInfo.mask
+            )
+            .alpha(if (carouselItemInfo.mask < 0.1f) 0f else 1f) // Hide if fully masked
+    }
+}
+
+
+
+--- FILE: src/main/java/com/hereliesaz/verticalcarousel/state/CarouselState.kt ---
+
+package com.hereliesaz.verticalcarousel.state
+
+import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.gestures.FlingBehavior
+import androidx.compose.foundation.gestures.ScrollableState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import com.hereliesaz.verticalcarousel.internal.CarouselFlingBehavior
+import com.hereliesaz.verticalcarousel.internal.CarouselScrollableState
+import com.hereliesaz.verticalcarousel.internal.KeylineState
+
+/**
+ * Creates and remembers a [CarouselState] for a carousel.
+ *
+ * @param initialItem The initial item index to be focused.
+ * @param itemCount A lambda that returns the total number of items in the carousel.
+ */
+@Composable
+fun rememberCarouselState(
+    initialItem: Int = 0,
+    itemCount: () -> Int,
+): CarouselState {
+    return remember {
+        CarouselState(
+            initialItem,
+            itemCount,
+        )
+    }
+}
+
+/**
+ * A state object that can be hoisted to control and observe carousel interactions.
+ *
+ * @param initialItem The initial item index to be focused.
+ * @param itemCount A lambda that returns the total number of items in the carousel.
+ */
+class CarouselState(
+    val initialItem: Int,
+    val itemCount: () -> Int,
+) {
+    internal lateinit var keylineState: KeylineState
+    internal val scrollableState: ScrollableState = CarouselScrollableState { delta ->
+        keylineState.scrollBy(delta)
+    }
+
+    internal fun fling(velocity: Float, spec: AnimationSpec<Float>): FlingBehavior {
+        return CarouselFlingBehavior(
+            scrollableState = scrollableState,
+            keylineState = keylineState,
+            snapAnimationSpec = spec
+        )
+    }
+}
+
+
+
+--- FILE: src/test/java/com/hereliesaz/verticalcarousel/ExampleUnitTest.kt ---
+
+package com.hereliesaz.verticalcarousel
+
+  import org.junit.Test
+
+  import org.junit.Assert.*
+
+  /**
+   * Example local unit test, which will execute on the development machine (host).
+   *
+   * See [testing documentation](http://d.android.com/tools/testing).
+   */
+  class ExampleUnitTest {
+      @Test
+      fun addition_isCorrect() {
+          assertEquals(4, 2 + 2)
+      }
+  }
+
+
+--- FILE: src/test/java/com/hereliesaz/verticalcarousel/KeylineStateTest.kt ---
+
+package com.hereliesaz.verticalcarousel
+
+import com.hereliesaz.verticalcarousel.internal.KeylineState
+import org.junit.Assert.assertEquals
+import org.junit.Test
+
+class KeylineStateTest {
+
+    @Test
+    fun heroStrategy_calculatesCorrectKeylines() {
+        val state = KeylineState(
+            itemHeight = 300.dp,
+            itemSpacing = 0.dp,
+            itemCount = 3,
+            strategy = KeylineState.Strategy.Hero
+        )
+        assertEquals(3, state.keylines.size)
+        assertEquals(300.dp, state.keylines[0].size)
+        assertEquals(600.dp, state.keylines[2].offset)
+    }
+
+    @Test
+    fun multiBrowseStrategy_calculatesCorrectKeylines() {
+        val state = KeylineState(
+            itemHeight = 200.dp,
+            itemSpacing = 8.dp,
+            itemCount = 3,
+            strategy = KeylineState.Strategy.MultiBrowse
+        )
+        // This is a simplified test. A real test would be more thorough.
+        assertEquals(3, state.keylines.size)
+        assertEquals(200.dp, state.keylines[1].size) // Focused item
+        assertEquals(140.dp, state.keylines[0].size) // Small item (200 * 0.7)
+    }
+}
+
+
+--- END OF BACKUP ---
+
