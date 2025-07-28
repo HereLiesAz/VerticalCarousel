@@ -2,14 +2,13 @@ package com.hereliesaz.verticalcarousel
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.VerticalPager
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.util.lerp
+import kotlin.math.absoluteValue
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -19,35 +18,26 @@ fun VerticalFadingCarousel(
     itemHeight: androidx.compose.ui.unit.Dp,
     content: @Composable (page: Int) -> Unit,
 ) {
-    val gradientColor = MaterialTheme.colorScheme.surface
-    val gradientHeight = itemHeight / 2
+    VerticalPager(
+        state = state,
+        modifier = modifier,
+        pageSize = androidx.compose.foundation.pager.PageSize.Fixed(itemHeight),
+    ) { page ->
+        val pageOffset = (
+            (state.currentPage - page) + state.currentPageOffsetFraction
+            ).absoluteValue
 
-    Box(modifier = modifier) {
-        VerticalPager(
-            state = state,
-            pageSize = androidx.compose.foundation.pager.PageSize.Fixed(itemHeight),
-            content = { page -> content(page) }
+        // A sharp alpha fade with no scaling
+        val alpha = lerp(
+            start = 1f,
+            stop = 0f,
+            fraction = pageOffset.coerceIn(0f, 1f)
         )
+
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .graphics.drawWithContent {
-                    drawContent()
-                    drawRect(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(gradientColor, Color.Transparent),
-                            startY = 0f,
-                            endY = gradientHeight.toPx()
-                        )
-                    )
-                    drawRect(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, gradientColor),
-                            startY = size.height - gradientHeight.toPx(),
-                            endY = size.height
-                        )
-                    )
-                }
-        )
+            modifier = Modifier.graphicsLayer { this.alpha = alpha }
+        ) {
+            content(page)
+        }
     }
 }
